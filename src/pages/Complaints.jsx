@@ -18,7 +18,6 @@ export default function Complaints() {
     isLoadingComplaints, 
     loadComplaintsData, 
     refreshData,
-    isDataStale,
     updateComplaintStatus: updateComplaintStatusInContext
   } = useComplaints();
   const [searchTerm, setSearchTerm] = useState("");

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useComplaints } from '../contexts/ComplaintsContext';
 import { Avatar, Badge } from '@radix-ui/themes';
-import { fetchComplaintStats } from '../services/api';
 import {
   Home,
   Search,
@@ -53,30 +53,22 @@ export default function Sidebar({ open, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, wardenData, logout } = useAuth();
-  const [pendingCount, setPendingCount] = useState(0);
+  const { getPendingCount, fetchStatsOnly, initializeData } = useComplaints();
   const [isDarkMode, setIsDarkMode] = React.useState(() => {
     // Check localStorage for saved dark mode preference
     const savedDarkMode = localStorage.getItem('darkMode');
     return savedDarkMode === 'true';
   });
 
-  // Fetch pending complaints count
+  // Initialize data when warden data is available
   useEffect(() => {
-    const fetchPendingCount = async () => {
-      if (!wardenData?.hostel) return; // Wait for warden data
-      
-      try {
-        const stats = await fetchComplaintStats(wardenData.hostel);
-        if (stats && stats.data) {
-          setPendingCount(stats.data.pending || 0);
-        }
-      } catch (error) {
-        console.error('Error fetching pending count:', error);
-      }
-    };
+    if (wardenData?.hostel) {
+      initializeData(wardenData.hostel);
+    }
+  }, [wardenData?.hostel, initializeData]);
 
-    fetchPendingCount();
-  }, [wardenData?.hostel]);
+  // Get current pending count
+  const pendingCount = getPendingCount();
 
   // Apply dark mode on component mount
   React.useEffect(() => {
