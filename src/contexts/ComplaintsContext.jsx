@@ -19,6 +19,9 @@ export const ComplaintsProvider = ({ children }) => {
   const [lastFetchTime, setLastFetchTime] = useState(null);
   const [currentHostel, setCurrentHostel] = useState(null);
   const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [cachedPages, setCachedPages] = useState({}); // Cache for different pages
   
   // Use refs to track ongoing requests and prevent duplicate calls
   const statsRequestRef = useRef(null);
@@ -35,7 +38,7 @@ export const ComplaintsProvider = ({ children }) => {
   }, [lastFetchTime, CACHE_DURATION]);
 
   // Unified data loading function - this prevents duplicate calls
-  const loadData = useCallback(async (hostel, forceRefresh = false, loadComplaints = false) => {
+  const loadData = useCallback(async (hostel, forceRefresh = false, loadComplaints = false, page = 1) => {
     console.log('🔄 ComplaintsContext: loadData called', {
       hostel,
       forceRefresh,
@@ -82,16 +85,29 @@ export const ComplaintsProvider = ({ children }) => {
         // Now load only complaints since we already have fresh stats
         console.log('🚀 ComplaintsContext: Loading only complaints after stats completed');
         setIsLoadingComplaints(true);
-        const complaintsPromise = fetchComplaints(hostel, 1, 1000);
+        const complaintsPromise = fetchComplaints(hostel, page, 20);
         complaintsRequestRef.current = complaintsPromise;
         
         try {
           const complaintsData = await complaintsPromise;
           setComplaints(complaintsData.data || []);
+          setPagination(complaintsData.pagination || null);
+          setCurrentPage(page);
           setLastFetchTime(Date.now());
           
+          // Cache the page data
+          setCachedPages(prev => ({
+            ...prev,
+            [page]: {
+              data: complaintsData.data || [],
+              pagination: complaintsData.pagination || null,
+              timestamp: Date.now()
+            }
+          }));
+          
           console.log('✅ ComplaintsContext: Complaints loaded successfully', {
-            complaintsCount: complaintsData.data?.length || 0
+            complaintsCount: complaintsData.data?.length || 0,
+            pagination: complaintsData.pagination
           });
         } finally {
           setIsLoadingComplaints(false);
@@ -126,7 +142,7 @@ export const ComplaintsProvider = ({ children }) => {
       if (loadComplaints) {
         // Load both stats and complaints
         const statsPromise = fetchComplaintStats(hostel);
-        const complaintsPromise = fetchComplaints(hostel, 1, 1000);
+        const complaintsPromise = fetchComplaints(hostel, page, 20);
         
         const combinedPromise = Promise.all([statsPromise, complaintsPromise]);
         complaintsRequestRef.current = combinedPromise;
@@ -135,13 +151,26 @@ export const ComplaintsProvider = ({ children }) => {
 
         console.log('✅ ComplaintsContext: loadData (with complaints) completed successfully', {
           statsData,
-          complaintsCount: complaintsData.data?.length || 0
+          complaintsCount: complaintsData.data?.length || 0,
+          pagination: complaintsData.pagination
         });
 
         setStats(statsData);
         setComplaints(complaintsData.data || []);
+        setPagination(complaintsData.pagination || null);
+        setCurrentPage(page);
         setLastFetchTime(Date.now());
         setCurrentHostel(hostel);
+        
+        // Cache the page data
+        setCachedPages(prev => ({
+          ...prev,
+          [page]: {
+            data: complaintsData.data || [],
+            pagination: complaintsData.pagination || null,
+            timestamp: Date.now()
+          }
+        }));
       } else {
         // Load only stats
         const statsPromise = fetchComplaintStats(hostel);
@@ -179,10 +208,32 @@ export const ComplaintsProvider = ({ children }) => {
   }, [loadData, stats]);
 
   // Load full complaints data (for complaints page) - now uses unified loadData
-  const loadComplaintsData = useCallback(async (hostel, forceRefresh = false) => {
+  const loadComplaintsData = useCallback(async (hostel, forceRefresh = false, page = 1) => {
     console.log('🔄 ComplaintsContext: loadComplaintsData called - delegating to loadData');
-    await loadData(hostel, forceRefresh, true);
+    await loadData(hostel, forceRefresh, true, page);
   }, [loadData]);
+
+  // Load specific page of complaints with caching
+  const loadComplaintsPage = useCallback(async (hostel, page) => {
+    console.log('🔄 ComplaintsContext: loadComplaintsPage called', { 
+      hostel, 
+      page,
+      isPageCached: !!cachedPages[page],
+      cachedPagesKeys: Object.keys(cachedPages)
+    });
+
+    // Check if page is already cached
+    if (cachedPages[page] && !isDataStale()) {
+      console.log('✅ ComplaintsContext: Using cached page data, skipping API call', { page });
+      setComplaints(cachedPages[page].data);
+      setPagination(cachedPages[page].pagination);
+      setCurrentPage(page);
+      return;
+    }
+
+    console.log('🚀 ComplaintsContext: Loading fresh page data from API', { page });
+    await loadData(hostel, true, true, page); // Force refresh for new page
+  }, [loadData, cachedPages, isDataStale]);
 
   // Initialize data when hostel is available - now uses unified loadData
   const initializeData = useCallback(async (hostel) => {
@@ -228,8 +279,8 @@ export const ComplaintsProvider = ({ children }) => {
   }, [loadData, stats, complaints.length, currentHostel]);
 
   // Refresh data manually - now uses unified loadData
-  const refreshData = useCallback(async (hostel) => {
-    console.log('🔄 ComplaintsContext: refreshData called', { hostel });
+  const refreshData = useCallback(async (hostel, page = 1) => {
+    console.log('🔄 ComplaintsContext: refreshData called', { hostel, page });
     
     if (!hostel) {
       console.log('⚠️ ComplaintsContext: No hostel provided for refreshData');
@@ -239,7 +290,7 @@ export const ComplaintsProvider = ({ children }) => {
     console.log('🚀 ComplaintsContext: Clearing cache and forcing refresh');
     // Clear cache and force refresh
     setLastFetchTime(null);
-    await loadData(hostel, true, true); // Force refresh with complaints
+    await loadData(hostel, true, true, page); // Force refresh with complaints
   }, [loadData]);
 
   // Get complaint by ID from cache
@@ -291,6 +342,9 @@ export const ComplaintsProvider = ({ children }) => {
     setLastFetchTime(null);
     setCurrentHostel(null);
     setError(null);
+    setPagination(null);
+    setCurrentPage(1);
+    setCachedPages({}); // Clear page cache
     isInitializedRef.current = false;
     
     // Cancel any ongoing requests
@@ -315,6 +369,9 @@ export const ComplaintsProvider = ({ children }) => {
     complaints,
     stats,
     error,
+    pagination,
+    currentPage,
+    cachedPages,
     
     // Loading states
     isLoadingStats,
@@ -322,6 +379,7 @@ export const ComplaintsProvider = ({ children }) => {
     
     // Functions
     loadComplaintsData,
+    loadComplaintsPage,
     fetchStatsOnly,
     initializeData,
     refreshData,

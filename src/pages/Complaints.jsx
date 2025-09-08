@@ -5,45 +5,57 @@ import { useComplaints } from "../contexts/ComplaintsContext";
 import Sidebar from "../components/Sidebar";
 import ComplaintsTable from "../components/ComplaintsTable";
 import ComplaintStats from "../components/ComplaintStats";
-import { Box, Text, Flex, TextField, Select, Button, Card, IconButton } from "@radix-ui/themes";
-import { Search, Filter, X, Search as MagnifyingGlassIcon, MoreHorizontal as DotsHorizontalIcon, RefreshCw, TrendingUp } from "lucide-react";
+import { Box, Text, Flex, TextField, Select, Button, IconButton } from "@radix-ui/themes";
+import { Search, Filter, X, Search as MagnifyingGlassIcon, RefreshCw, TrendingUp } from "lucide-react";
 import { ResetIcon } from '@radix-ui/react-icons';
+
 export default function Complaints() {
   const navigate = useNavigate();
-  const { user, token, wardenData } = useAuth();
+  const { user, token, wardenData, isLoading: isAuthLoading } = useAuth();
   const { 
     complaints, 
     stats, 
     isLoadingStats, 
     isLoadingComplaints, 
-    loadComplaintsData, 
+    loadComplaintsData,
+    loadComplaintsPage,
     refreshData,
-    updateComplaintStatus: updateComplaintStatusInContext
+    updateComplaintStatus: updateComplaintStatusInContext,
+    pagination,
+    currentPage
   } = useComplaints();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [filteredComplaints, setFilteredComplaints] = useState([]);
-  const [pagination, setPagination] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
 
   const handleComplaintUpdate = (complaintId, newStatus) => {
     console.log('handleComplaintUpdate called with:', complaintId, newStatus);
-    // Update the complaint status in the context
     updateComplaintStatusInContext(complaintId, newStatus);
   };
 
   useEffect(() => {
     if (wardenData?.hostel) {
+      setIsInitialDataLoaded(false);
       loadComplaintsData(wardenData.hostel);
     }
   }, [wardenData?.hostel, loadComplaintsData]);
 
-  // Filter complaints based on search term and status
+  // Track when initial data loading is complete - only when BOTH stats AND complaints are loaded
+  useEffect(() => {
+    if (!isLoadingComplaints && !isLoadingStats && wardenData?.hostel && !isInitialDataLoaded) {
+      if (pagination || complaints.length > 0) {
+        console.log('✅ Initial data loading complete');
+        setIsInitialDataLoaded(true);
+      }
+    }
+  }, [isLoadingComplaints, isLoadingStats, wardenData?.hostel, isInitialDataLoaded, pagination, complaints.length]);
+
   useEffect(() => {
     let filtered = complaints;
 
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(complaint => {
         const id = complaint.id?.toString() || '';
@@ -66,12 +78,10 @@ export default function Complaints() {
       });
     }
 
-    // Filter by status
     if (statusFilter !== "all") {
       filtered = filtered.filter(complaint => complaint.status === statusFilter);
     }
 
-    // Filter by category
     if (categoryFilter !== "all") {
       filtered = filtered.filter(complaint => complaint.category === categoryFilter);
     }
@@ -87,16 +97,37 @@ export default function Complaints() {
 
   const handleRefresh = async () => {
     if (wardenData?.hostel) {
-      await refreshData(wardenData.hostel);
+      await refreshData(wardenData.hostel, currentPage);
     }
   };
 
+  const handlePageChange = async (newPage) => {
+    if (wardenData?.hostel && newPage !== currentPage) {
+      setIsPageLoading(true);
+      try {
+        await loadComplaintsPage(wardenData.hostel, newPage);
+      } finally {
+        setIsPageLoading(false);
+      }
+    }
+  };
+
+  // Determine if data fetch is complete
+  const isDataFetchComplete = !isAuthLoading && isInitialDataLoaded && !isPageLoading && !isLoadingComplaints;
+  
+  // Debug logging
+  console.log('🔍 Loading States:', JSON.stringify({
+    isAuthLoading,
+    isInitialDataLoaded,
+    isPageLoading,
+    isLoadingComplaints,
+    isDataFetchComplete,
+    complaintsLength: complaints.length
+  }, null, 2));
+
   return (
     <Flex style={{ minHeight: '100vh' }}>
-      {/* Sidebar */}
       <Sidebar />
-
-      {/* Main Content Area */}
       <Box style={{
         flex: 1,
         padding: '24px',
@@ -104,7 +135,6 @@ export default function Complaints() {
         minHeight: '100vh',
         backgroundColor: 'var(--color-background)'
       }}>
-        {/* Header with Title and Refresh Button */}
         <Flex align="center" justify="between" style={{ marginBottom: '20px' }}>
           <Flex align="center" gap="3">
             <TrendingUp size={20} style={{ color: 'var(--gray-11)' }} />
@@ -114,7 +144,7 @@ export default function Complaints() {
           </Flex>
           <Flex align="center" gap="2">
             <Button
-            style={{ cursor: 'pointer' }}
+              style={{ cursor: 'pointer' }}
               variant="soft"
               color="gray"
               onClick={handleRefresh}
@@ -126,12 +156,9 @@ export default function Complaints() {
           </Flex>
         </Flex>
 
-        {/* Complaint Statistics */}
         <ComplaintStats stats={stats} isLoading={isLoadingStats} />
 
-        {/* Search and Filter Section */}
         <Flex gap="3" wrap="wrap" align="center" style={{ marginBottom: '12px' }}>
-          {/* Search Input */}
           <Box style={{ flex: '1 1 300px', minWidth: '300px' }}>
             <TextField.Root
               placeholder="Search by complaint ID, student name, roll number, room, category..."
@@ -157,7 +184,6 @@ export default function Complaints() {
             </TextField.Root>
           </Box>
 
-          {/* Status Filter */}
           <Box>
             <Select.Root value={statusFilter} onValueChange={setStatusFilter}>
               <Select.Trigger variant="soft" />
@@ -171,7 +197,6 @@ export default function Complaints() {
             </Select.Root>
           </Box>
 
-          {/* Category Filter */}
           <Box>
             <Select.Root value={categoryFilter} onValueChange={setCategoryFilter}>
               <Select.Trigger variant="soft" />
@@ -185,7 +210,6 @@ export default function Complaints() {
             </Select.Root>
           </Box>
 
-          {/* Clear Filters Button */}
           <Button
             variant="soft"
             color="gray"
@@ -200,13 +224,13 @@ export default function Complaints() {
           </Button>
         </Flex>
 
-        {/* Complaints Table */}
         <ComplaintsTable
           complaints={filteredComplaints}
-          isLoading={isLoadingComplaints}
+          isLoading={isAuthLoading || !isInitialDataLoaded || isPageLoading || isLoadingComplaints}
+          isDataFetchComplete={isDataFetchComplete}
           pagination={pagination}
           currentPage={currentPage}
-          onPageChange={setCurrentPage}
+          onPageChange={handlePageChange}
           onComplaintUpdate={handleComplaintUpdate}
         />
       </Box>
