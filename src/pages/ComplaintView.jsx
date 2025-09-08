@@ -16,7 +16,7 @@ import {
     AlertDialog
 } from "@radix-ui/themes";
 import { ArrowLeft, Phone, Mail, Calendar, User, MapPin, FileText, Clock, CheckCircle2, XCircle, AlertCircle, MessageSquare } from 'lucide-react';
-import { fetchComplaintDetails, updateComplaintStatus } from '../services/api';
+import { fetchComplaintDetails, updateComplaintStatus, sendBothNotifications } from '../services/api';
 import { useComplaints } from '../contexts/ComplaintsContext';
 import Sidebar from '../components/Sidebar';
 import ImageModal from '../components/ImageModal';
@@ -198,6 +198,22 @@ const ComplaintView = () => {
             const response = await updateComplaintStatus(complaint.id, 'in_progress', 'warden001');
             
             if (response.success) {
+                // Send notification when complaint is accepted
+                try {
+                    const notificationData = {
+                        title: `${complaint.category} - In Progress`,
+                        description: `Complaint #${complaint.id} regarding ${complaint.subcategory} is currently being processed.`,
+                        channel: "complaint_status",
+                        complaint_id: complaint.id.toString()
+                    };
+                    
+                    const result = await sendBothNotifications(complaint.student_roll, notificationData);
+                    console.log('Notifications sent successfully for complaint:', complaint.id, result);
+                } catch (notificationError) {
+                    console.error('Error sending notifications:', notificationError);
+                    // Don't fail the complaint acceptance if notification fails
+                }
+
                 // Update the complaint status locally
                 setComplaint(prev => ({
                     ...prev,
@@ -226,6 +242,22 @@ const ComplaintView = () => {
             const response = await updateComplaintStatus(complaint.id, 'rejected', 'warden001');
             
             if (response.success) {
+                // Send notification when complaint is rejected
+                try {
+                    const notificationData = {
+                        title: `${complaint.category} - Rejected`,
+                        description: `Complaint #${complaint.id} regarding ${complaint.subcategory} has been rejected.`,
+                        channel: "complaint_status",
+                        complaint_id: complaint.id.toString()
+                    };
+                    
+                    const result = await sendBothNotifications(complaint.student_roll, notificationData);
+                    console.log('Rejected notifications sent successfully for complaint:', complaint.id, result);
+                } catch (notificationError) {
+                    console.error('Error sending rejected notifications:', notificationError);
+                    // Don't fail the complaint rejection if notification fails
+                }
+
                 // Update the complaint status locally
                 setComplaint(prev => ({
                     ...prev,
@@ -254,6 +286,22 @@ const ComplaintView = () => {
             const response = await updateComplaintStatus(complaint.id, 'resolved', 'warden001');
             
             if (response.success) {
+                // Send notification when complaint is resolved
+                try {
+                    const notificationData = {
+                        title: `${complaint.category} - Resolved`,
+                        description: `Complaint #${complaint.id} regarding ${complaint.subcategory} has been successfully resolved.`,
+                        channel: "complaint_status",
+                        complaint_id: complaint.id.toString()
+                    };
+                    
+                    const result = await sendBothNotifications(complaint.student_roll, notificationData);
+                    console.log('Resolved notifications sent successfully for complaint:', complaint.id, result);
+                } catch (notificationError) {
+                    console.error('Error sending resolved notifications:', notificationError);
+                    // Don't fail the complaint resolution if notification fails
+                }
+
                 // Update the complaint status locally
                 setComplaint(prev => ({
                     ...prev,

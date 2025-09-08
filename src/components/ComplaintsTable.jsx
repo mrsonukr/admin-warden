@@ -17,7 +17,7 @@ import {
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { InfoCircledIcon } from '@radix-ui/react-icons';
 import { Copy, Eye, Check, ChevronLeft, ChevronRight, Phone, Mail } from "lucide-react";
-import { updateComplaintStatus } from '../services/api';
+import { updateComplaintStatus, sendBothNotifications } from '../services/api';
 
 const ComplaintsTable = ({ complaints, isLoading, pagination, currentPage, onPageChange, onComplaintUpdate }) => {
     const navigate = useNavigate();
@@ -159,6 +159,50 @@ const ComplaintsTable = ({ complaints, isLoading, pagination, currentPage, onPag
             const response = await updateComplaintStatus(complaintId, newStatus, 'warden001');
             
             if (response.success) {
+                // Send notification when complaint is accepted (pending -> in_progress)
+                if (currentStatus === 'pending' && newStatus === 'in_progress') {
+                    try {
+                        // Find the complaint data to get category, subcategory, and roll number
+                        const complaint = complaints.find(c => c.id === complaintId);
+                        if (complaint) {
+                            const notificationData = {
+                                title: `${complaint.category} - In Progress`,
+                                description: `Complaint #${complaintId} regarding ${complaint.subcategory} is currently being processed.`,
+                                channel: "complaint_status",
+                                complaint_id: complaintId.toString()
+                            };
+                            
+                            const result = await sendBothNotifications(complaint.student_roll, notificationData);
+                            console.log('Notifications sent successfully for complaint:', complaintId, result);
+                        }
+                    } catch (notificationError) {
+                        console.error('Error sending notifications:', notificationError);
+                        // Don't fail the complaint acceptance if notification fails
+                    }
+                }
+                
+                // Send notification when complaint is resolved (in_progress -> resolved)
+                if (currentStatus === 'in_progress' && newStatus === 'resolved') {
+                    try {
+                        // Find the complaint data to get category, subcategory, and roll number
+                        const complaint = complaints.find(c => c.id === complaintId);
+                        if (complaint) {
+                            const notificationData = {
+                                title: `${complaint.category} - Resolved`,
+                                description: `Complaint #${complaintId} regarding ${complaint.subcategory} has been successfully resolved.`,
+                                channel: "complaint_status",
+                                complaint_id: complaintId.toString()
+                            };
+                            
+                            const result = await sendBothNotifications(complaint.student_roll, notificationData);
+                            console.log('Resolved notifications sent successfully for complaint:', complaintId, result);
+                        }
+                    } catch (notificationError) {
+                        console.error('Error sending resolved notifications:', notificationError);
+                        // Don't fail the complaint resolution if notification fails
+                    }
+                }
+
                 // Success - no alert needed
                 // Update the local complaint status
                 if (onComplaintUpdate) {
