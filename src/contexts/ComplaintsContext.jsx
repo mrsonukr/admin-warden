@@ -231,9 +231,35 @@ export const ComplaintsProvider = ({ children }) => {
       return;
     }
 
-    console.log('🚀 ComplaintsContext: Loading fresh page data from API', { page });
-    await loadData(hostel, true, true, page); // Force refresh for new page
-  }, [loadData, cachedPages, isDataStale]);
+    console.log('🚀 ComplaintsContext: Loading fresh page data from API (complaints only, no stats reload)', { page });
+    setIsLoadingComplaints(true);
+    try {
+      const complaintsData = await fetchComplaints(hostel, page, 20);
+      setComplaints(complaintsData.data || []);
+      setPagination(complaintsData.pagination || null);
+      setCurrentPage(page);
+      setLastFetchTime(Date.now());
+
+      // Cache the page data
+      setCachedPages(prev => ({
+        ...prev,
+        [page]: {
+          data: complaintsData.data || [],
+          pagination: complaintsData.pagination || null,
+          timestamp: Date.now()
+        }
+      }));
+
+      console.log('✅ ComplaintsContext: Page complaints loaded successfully', {
+        complaintsCount: complaintsData.data?.length || 0,
+        pagination: complaintsData.pagination
+      });
+    } catch (error) {
+      console.error('❌ ComplaintsContext: Failed to load page complaints', error);
+    } finally {
+      setIsLoadingComplaints(false);
+    }
+  }, [cachedPages, isDataStale]);
 
   // Initialize data when hostel is available - now uses unified loadData
   const initializeData = useCallback(async (hostel) => {

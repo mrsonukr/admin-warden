@@ -25,6 +25,7 @@ const ComplaintsTable = ({
   isDataFetchComplete,
   pagination,
   currentPage,
+  loadingPage,
   onPageChange,
   onComplaintUpdate,
 }) => {
@@ -236,6 +237,23 @@ const ComplaintsTable = ({
     }
   };
 
+  // Compute skeleton count based on pagination and target page (first page -> 20; other pages -> exact remaining)
+  const pageSize = pagination?.items_per_page || 20;
+  const totalItemsAll = pagination?.total_items;
+  const totalPagesAll = pagination?.total_pages;
+  const targetPage = loadingPage ?? currentPage ?? 1;
+  let skeletonCount = 20;
+  if (pagination && typeof totalItemsAll === 'number' && typeof totalPagesAll === 'number') {
+    if (targetPage === 1) {
+      skeletonCount = pageSize;
+    } else if (targetPage < totalPagesAll) {
+      skeletonCount = pageSize;
+    } else if (targetPage === totalPagesAll) {
+      const remainder = totalItemsAll % pageSize;
+      skeletonCount = remainder === 0 ? pageSize : remainder;
+    }
+  }
+
   // Show skeleton loader during any loading state
   if (isLoading) {
     return (
@@ -253,7 +271,7 @@ const ComplaintsTable = ({
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {Array.from({ length: 5 }).map((_, i) => (
+              {Array.from({ length: skeletonCount }).map((_, i) => (
                 <Table.Row key={i}>
                   <Table.Cell>
                     <Skeleton style={{ width: '80px', height: '20px' }} />

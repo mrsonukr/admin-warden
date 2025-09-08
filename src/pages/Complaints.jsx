@@ -30,6 +30,7 @@ export default function Complaints() {
   const [filteredComplaints, setFilteredComplaints] = useState([]);
   const [isPageLoading, setIsPageLoading] = useState(false);
   const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
+  const [loadingPage, setLoadingPage] = useState(null);
 
   const handleComplaintUpdate = (complaintId, newStatus) => {
     console.log('handleComplaintUpdate called with:', complaintId, newStatus);
@@ -104,10 +105,12 @@ export default function Complaints() {
   const handlePageChange = async (newPage) => {
     if (wardenData?.hostel && newPage !== currentPage) {
       setIsPageLoading(true);
+      setLoadingPage(newPage);
       try {
         await loadComplaintsPage(wardenData.hostel, newPage);
       } finally {
         setIsPageLoading(false);
+        setLoadingPage(null);
       }
     }
   };
@@ -230,6 +233,7 @@ export default function Complaints() {
           isDataFetchComplete={isDataFetchComplete}
           pagination={pagination}
           currentPage={currentPage}
+          loadingPage={loadingPage}
           onPageChange={handlePageChange}
           onComplaintUpdate={handleComplaintUpdate}
         />
