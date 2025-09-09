@@ -288,21 +288,21 @@ const ComplaintsTable = ({ complaints, isLoading, pagination, currentPage, onPag
                             <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
                         </Table.Row>
                     </Table.Header>
-                                         <Table.Body>
-                         {currentComplaints.length === 0 ? (
-                             <Table.Row>
-                                 <Table.Cell colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
-                                     <Flex direction="column" align="center" gap="3">
-                                         <Text size="3" color="gray" weight="medium">
-                                             No complaints found
-                                         </Text>
-                                         <Text size="2" color="gray">
-                                             Try adjusting your search or filter criteria
-                                         </Text>
-                                     </Flex>
-                                 </Table.Cell>
-                             </Table.Row>
-                         ) : (
+                    <Table.Body>
+                        {!isLoading && currentComplaints.length === 0 ? (
+                            <Table.Row>
+                                <Table.Cell colSpan="6" style={{ textAlign: 'center', padding: '40px' }}>
+                                    <Flex direction="column" align="center" gap="3">
+                                        <Text size="3" color="gray" weight="medium">
+                                            No complaints found
+                                        </Text>
+                                        <Text size="2" color="gray">
+                                            Try adjusting your search or filter criteria
+                                        </Text>
+                                    </Flex>
+                                </Table.Cell>
+                            </Table.Row>
+                        ) : !isLoading ? (
                              currentComplaints.map((complaint) => {
                                  return (
                                      <Table.Row key={complaint.id}>
@@ -449,7 +449,7 @@ const ComplaintsTable = ({ complaints, isLoading, pagination, currentPage, onPag
                                 </Table.Row>
                             );
                         })
-                        )}
+                        ) : null}
                     </Table.Body>
                 </Table.Root>
             </Box>

@@ -26,6 +26,7 @@ export default function Complaints() {
   const [filteredComplaints, setFilteredComplaints] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [initializingComplaints, setInitializingComplaints] = useState(false);
 
   const handleComplaintUpdate = (complaintId, newStatus) => {
     console.log('handleComplaintUpdate called with:', complaintId, newStatus);
@@ -34,9 +35,19 @@ export default function Complaints() {
   };
 
   useEffect(() => {
+    let cancelled = false;
     if (wardenData?.hostel) {
-      loadComplaintsData(wardenData.hostel);
+      if (complaints.length === 0) {
+        setInitializingComplaints(true);
+      }
+      (async () => {
+        await loadComplaintsData(wardenData.hostel);
+        if (!cancelled) setInitializingComplaints(false);
+      })();
     }
+    return () => {
+      cancelled = true;
+    };
   }, [wardenData?.hostel, loadComplaintsData]);
 
   // Filter complaints based on search term and status
@@ -120,7 +131,12 @@ export default function Complaints() {
               onClick={handleRefresh}
               disabled={isLoadingStats || isLoadingComplaints}
             >
-              <RefreshCw size="16" />
+              <RefreshCw 
+                size="16" 
+                style={{ 
+                  animation: (isLoadingStats || isLoadingComplaints) ? 'spin 1s linear infinite' : 'none'
+                }} 
+              />
               Refresh
             </Button>
           </Flex>
@@ -203,7 +219,7 @@ export default function Complaints() {
         {/* Complaints Table */}
         <ComplaintsTable
           complaints={filteredComplaints}
-          isLoading={isLoadingComplaints}
+          isLoading={initializingComplaints || isLoadingComplaints}
           pagination={pagination}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
