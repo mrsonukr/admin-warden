@@ -1,19 +1,37 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Sidebar from "../components/Sidebar";
 import StudentStats from "../components/StudentStats";
-import { Box, Text, Flex } from "@radix-ui/themes";
-import { TrendingUp } from "lucide-react";
+import MessTimingsTable from "../components/MessTimingsTable";
+import HostelEntryTimeDialog from "../components/HostelEntryTimeDialog";
+import MessTimingsEditDialog from "../components/MessTimingsEditDialog";
+import DashboardHeader from "../components/DashboardHeader";
+import { useDashboard } from "../hooks/useDashboard";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(() => {
-    const savedCollapsed = localStorage.getItem('sidebarCollapsed');
-    return savedCollapsed === 'true';
-  });
+  const { logout, wardenData } = useAuth();
+  
+  // Use custom hook for dashboard state management
+  const {
+    sidebarOpen,
+    setSidebarOpen,
+    isSidebarCollapsed,
+    setIsSidebarCollapsed,
+    isEditTimeDialogOpen,
+    isEditMessDialogOpen,
+    hostelEntryTime,
+    messTimings,
+    handleEditTimeClick,
+    handleTimeChange,
+    handleSaveTime,
+    handleCancelEditTime,
+    handleEditMessClick,
+    handleMessTimeChange,
+    handleSaveMessTimings,
+    handleCancelEditMess
+  } = useDashboard();
 
   // Mock student statistics data
   const studentStats = {
@@ -24,8 +42,6 @@ export default function Dashboard() {
     graduated: 80,
     new_admissions: 45
   };
-
-
 
   const handleLogout = () => {
     logout();
@@ -47,19 +63,42 @@ export default function Dashboard() {
         }}
       >
         {/* Header */}
-        <Flex align="center" justify="between" style={{ marginBottom: '20px' }}>
-          <Flex align="center" gap="3">
-            <TrendingUp size={20} style={{ color: 'var(--gray-11)' }} />
-            <Text size="5" weight="bold" style={{ color: 'var(--gray-12)' }}>
-              Student Statistics
-            </Text>
-          </Flex>
-        </Flex>
+        <DashboardHeader 
+          wardenData={wardenData}
+          hostelEntryTime={hostelEntryTime}
+          onEditTimeClick={handleEditTimeClick}
+        />
 
         {/* Student Statistics Cards */}
-        <StudentStats stats={studentStats} isLoading={false} />
+        <StudentStats stats={studentStats} isLoading={false} wardenData={wardenData} />
 
+        {/* Mess Timings Table */}
+        <MessTimingsTable 
+          messTimings={messTimings} 
+          onEditClick={handleEditMessClick} 
+        />
 
+        {/* Edit Hostel Entry Time Dialog */}
+        <HostelEntryTimeDialog
+          isOpen={isEditTimeDialogOpen}
+          onClose={() => setIsEditTimeDialogOpen(false)}
+          hostelEntryTime={hostelEntryTime}
+          onTimeChange={handleTimeChange}
+          onSave={handleSaveTime}
+          onCancel={handleCancelEditTime}
+          wardenData={wardenData}
+        />
+
+        {/* Edit Mess Timings Dialog */}
+        <MessTimingsEditDialog
+          isOpen={isEditMessDialogOpen}
+          onClose={() => setIsEditMessDialogOpen(false)}
+          messTimings={messTimings}
+          onMessTimeChange={handleMessTimeChange}
+          onSave={handleSaveMessTimings}
+          onCancel={handleCancelEditMess}
+          wardenData={wardenData}
+        />
 
       </div>
     </div>
