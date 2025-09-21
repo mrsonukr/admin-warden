@@ -59,6 +59,14 @@ export default function App() {
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/analytics" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="*" element={<Navigate to="/" replace />} />

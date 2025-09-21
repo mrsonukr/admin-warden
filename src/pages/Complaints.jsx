@@ -11,6 +11,10 @@ import { ResetIcon } from '@radix-ui/react-icons';
 export default function Complaints() {
   const navigate = useNavigate();
   const { user, token, wardenData } = useAuth();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(() => {
+    const savedCollapsed = localStorage.getItem('sidebarCollapsed');
+    return savedCollapsed === 'true';
+  });
   const { 
     complaints, 
     stats, 
@@ -105,15 +109,17 @@ export default function Complaints() {
   return (
     <Flex style={{ minHeight: '100vh' }}>
       {/* Sidebar */}
-      <Sidebar />
+      <Sidebar onCollapseChange={setIsSidebarCollapsed} />
 
       {/* Main Content Area */}
       <Box style={{
         flex: 1,
         padding: '24px',
-        marginLeft: '240px',
+        marginLeft: isSidebarCollapsed ? '64px' : '240px',
         minHeight: '100vh',
-        backgroundColor: 'var(--color-background)'
+        backgroundColor: 'var(--color-background)',
+        transition: 'margin-left 0.3s ease',
+        width: isSidebarCollapsed ? 'calc(100vw - 64px)' : 'calc(100vw - 240px)'
       }}>
         {/* Header with Title and Refresh Button */}
         <Flex align="center" justify="between" style={{ marginBottom: '20px' }}>

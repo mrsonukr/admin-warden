@@ -75,6 +75,44 @@ export const updateWardenProfile = async (wardenId, profileData, token) => {
   }
 };
 
+export const changeWardenPassword = async (wardenId, passwordData, token) => {
+  console.log('🚀 API Call: changeWardenPassword', {
+    url: `${API_BASE_URL}/wardens/${wardenId}/change-password`,
+    method: 'PUT',
+    wardenId,
+    timestamp: new Date().toISOString()
+  });
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/wardens/${wardenId}/change-password`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(passwordData),
+    });
+
+    console.log('📡 Response received for changeWardenPassword:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ changeWardenPassword success:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error changing warden password:', error);
+    throw error;
+  }
+};
+
 export const fetchComplaintStats = async (hostelName) => {
   console.log('🚀 API Call: fetchComplaintStats', {
     url: `https://risecomplaint.mssonutech.workers.dev/api/stats/${hostelName}`,

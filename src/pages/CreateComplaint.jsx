@@ -21,6 +21,10 @@ import { useNavigate } from 'react-router-dom';
 const CreateComplaint = () => {
     const { user, wardenData } = useAuth();
     const navigate = useNavigate();
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(() => {
+        const savedCollapsed = localStorage.getItem('sidebarCollapsed');
+        return savedCollapsed === 'true';
+    });
 
     const [formData, setFormData] = useState({
         student_roll: '',
@@ -303,14 +307,16 @@ const CreateComplaint = () => {
 
     return (
         <Flex style={{ minHeight: '100vh' }}>
-            <Sidebar />
+            <Sidebar onCollapseChange={setIsSidebarCollapsed} />
 
             <Box style={{
                 flex: 1,
                 padding: '24px',
-                marginLeft: '240px',
+                marginLeft: isSidebarCollapsed ? '64px' : '240px',
                 minHeight: '100vh',
-                backgroundColor: 'var(--color-background)'
+                backgroundColor: 'var(--color-background)',
+                transition: 'margin-left 0.3s ease',
+                width: isSidebarCollapsed ? 'calc(100vw - 64px)' : 'calc(100vw - 240px)'
             }}>
                 {/* Header */}
                 <Flex align="center" gap="4" mb="6">

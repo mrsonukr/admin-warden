@@ -25,6 +25,10 @@ const ComplaintView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { getComplaintById } = useComplaints();
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(() => {
+        const savedCollapsed = localStorage.getItem('sidebarCollapsed');
+        return savedCollapsed === 'true';
+    });
     const [complaint, setComplaint] = useState(null);
     const [studentData, setStudentData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -325,15 +329,17 @@ const ComplaintView = () => {
         return (
             <Flex style={{ minHeight: '100vh' }}>
                 {/* Sidebar */}
-                <Sidebar />
+                <Sidebar onCollapseChange={setIsSidebarCollapsed} />
 
                 {/* Main Content Area */}
                 <Box style={{
                     flex: 1,
                     padding: '24px',
-                    marginLeft: '240px',
+                    marginLeft: isSidebarCollapsed ? '64px' : '240px',
                     minHeight: '100vh',
-                    backgroundColor: 'var(--color-background)'
+                    backgroundColor: 'var(--color-background)',
+                    transition: 'margin-left 0.3s ease',
+                    width: isSidebarCollapsed ? 'calc(100vw - 64px)' : 'calc(100vw - 240px)'
                 }}>
                     {/* Header Skeleton */}
                     <Flex align="center" gap="4" mb="6">
@@ -488,15 +494,17 @@ const ComplaintView = () => {
         return (
             <Flex style={{ minHeight: '100vh' }}>
                 {/* Sidebar */}
-                <Sidebar />
+                <Sidebar onCollapseChange={setIsSidebarCollapsed} />
 
                 {/* Main Content Area */}
                 <Box style={{
                     flex: 1,
                     padding: '24px',
-                    marginLeft: '240px',
+                    marginLeft: isSidebarCollapsed ? '64px' : '240px',
                     minHeight: '100vh',
-                    backgroundColor: 'var(--color-background)'
+                    backgroundColor: 'var(--color-background)',
+                    transition: 'margin-left 0.3s ease',
+                    width: isSidebarCollapsed ? 'calc(100vw - 64px)' : 'calc(100vw - 240px)'
                 }}>
                     <Flex direction="column" align="center" gap="4" style={{ padding: '40px' }}>
                         <Text size="4" color="red">Complaint not found</Text>
@@ -514,15 +522,17 @@ const ComplaintView = () => {
     return (
         <Flex style={{ minHeight: '100vh' }}>
             {/* Sidebar */}
-            <Sidebar />
+            <Sidebar onCollapseChange={setIsSidebarCollapsed} />
 
             {/* Main Content Area */}
             <Box style={{
                 flex: 1,
                 padding: '24px',
-                marginLeft: '240px',
+                marginLeft: isSidebarCollapsed ? '64px' : '240px',
                 minHeight: '100vh',
-                backgroundColor: 'var(--color-background)'
+                backgroundColor: 'var(--color-background)',
+                transition: 'margin-left 0.3s ease',
+                width: isSidebarCollapsed ? 'calc(100vw - 64px)' : 'calc(100vw - 240px)'
             }}>
                 {/* Header */}
                 <Flex align="center" gap="4" mb="6">
@@ -709,7 +719,7 @@ const ComplaintView = () => {
                                                                 height: '120px',
                                                                 borderRadius: '8px',
                                                                 overflow: 'hidden',
-                                                                border: '1px solid #e2e8f0',
+                                                                border: '1px solid var(--gray-6)',
                                                                 cursor: 'pointer'
                                                             }}
                                                             onClick={() => openImageModal(photoUrl)}

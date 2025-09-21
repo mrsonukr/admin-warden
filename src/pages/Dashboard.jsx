@@ -2,11 +2,29 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Sidebar from "../components/Sidebar";
+import StudentStats from "../components/StudentStats";
+import { Box, Text, Flex } from "@radix-ui/themes";
+import { TrendingUp } from "lucide-react";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { logout, user, token, wardenData, isLoading } = useAuth();
+  const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(() => {
+    const savedCollapsed = localStorage.getItem('sidebarCollapsed');
+    return savedCollapsed === 'true';
+  });
+
+  // Mock student statistics data
+  const studentStats = {
+    total_students: 1250,
+    registered: 1180,
+    unregistered: 70,
+    active_students: 1100,
+    graduated: 80,
+    new_admissions: 45
+  };
+
 
 
   const handleLogout = () => {
@@ -17,52 +35,31 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onCollapseChange={setIsSidebarCollapsed} />
       
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col p-6 bg-slate-50 dark:bg-gray-900 min-h-screen ml-60">
-        {/* Dashboard content */}
-        <h1 className="mb-6 text-slate-800 dark:text-white text-3xl font-bold">
-          Welcome to Admin Dashboard
-        </h1>
-        
-        {isLoading ? (
-          <p className="text-slate-600 dark:text-gray-400">Loading warden data...</p>
-        ) : wardenData ? (
-          <div className="max-w-2xl bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-gray-700">
-            <h2 className="mb-4 text-xl font-semibold text-slate-800 dark:text-white">
-              Warden Information
-            </h2>
-            <div className="space-y-3">
-              <div className="flex">
-                <span className="font-medium text-slate-700 dark:text-gray-300 w-20">Name:</span>
-                <span className="text-slate-600 dark:text-gray-400">{wardenData.name || 'N/A'}</span>
-              </div>
-              <div className="flex">
-                <span className="font-medium text-slate-700 dark:text-gray-300 w-20">Email:</span>
-                <span className="text-slate-600 dark:text-gray-400">{wardenData.email || 'N/A'}</span>
-              </div>
-              <div className="flex">
-                <span className="font-medium text-slate-700 dark:text-gray-300 w-20">ID:</span>
-                <span className="text-slate-600 dark:text-gray-400">{wardenData.warden_id || 'N/A'}</span>
-              </div>
-              <div className="flex">
-                <span className="font-medium text-slate-700 dark:text-gray-300 w-20">Phone:</span>
-                <span className="text-slate-600 dark:text-gray-400">{wardenData.phone || 'N/A'}</span>
-              </div>
-              <div className="flex">
-                <span className="font-medium text-slate-700 dark:text-gray-300 w-20">Hostel:</span>
-                <span className="text-slate-600 dark:text-gray-400">{wardenData.hostel || 'N/A'}</span>
-              </div>
-              <div className="flex">
-                <span className="font-medium text-slate-700 dark:text-gray-300 w-20">Status:</span>
-                <span className="text-slate-600 dark:text-gray-400">{wardenData.status || 'N/A'}</span>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-slate-600 dark:text-gray-400">No warden data available</p>
-        )}
+      <div 
+        className="flex-1 flex flex-col p-6 min-h-screen transition-all duration-300"
+        style={{
+          marginLeft: isSidebarCollapsed ? '64px' : '240px',
+          width: isSidebarCollapsed ? 'calc(100vw - 64px)' : 'calc(100vw - 240px)',
+          backgroundColor: 'var(--color-background)'
+        }}
+      >
+        {/* Header */}
+        <Flex align="center" justify="between" style={{ marginBottom: '20px' }}>
+          <Flex align="center" gap="3">
+            <TrendingUp size={20} style={{ color: 'var(--gray-11)' }} />
+            <Text size="5" weight="bold" style={{ color: 'var(--gray-12)' }}>
+              Student Statistics
+            </Text>
+          </Flex>
+        </Flex>
+
+        {/* Student Statistics Cards */}
+        <StudentStats stats={studentStats} isLoading={false} />
+
+
 
       </div>
     </div>

@@ -355,7 +355,7 @@ const ComplaintsTable = ({ complaints, isLoading, pagination, currentPage, onPag
                                                                 <Text size="3" weight="bold">
                                                                     {studentData[complaint.student_roll]?.full_name || complaint.student_name}
                                                                 </Text>
-                                                                <VerifiedIcon sx={{ fontSize: 16, color: '#0090FF' }} />
+                                                                <VerifiedIcon sx={{ fontSize: 16, color: 'var(--blue-9)' }} />
                                                             </Flex>
 
                                                             <Flex gap="3" align="center" mb="2">

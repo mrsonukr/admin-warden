@@ -12,7 +12,9 @@ import {
   User,
   LogOut,
   Moon,
-  Sun
+  Sun,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const menuItems = [
@@ -38,9 +40,9 @@ const menuItems = [
     path: '/create-complaint'
   },
   {
-    text: 'Dashboard',
+    text: 'Analytics',
     icon: <BarChart3 className="w-6 h-6" />,
-    path: '/dashboard'
+    path: '/analytics'
   },
   {
     text: 'Profile',
@@ -49,7 +51,7 @@ const menuItems = [
   },
 ];
 
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar({ open, onClose, onCollapseChange }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, wardenData, logout } = useAuth();
@@ -58,6 +60,11 @@ export default function Sidebar({ open, onClose }) {
     // Check localStorage for saved dark mode preference
     const savedDarkMode = localStorage.getItem('darkMode');
     return savedDarkMode === 'true';
+  });
+  const [isCollapsed, setIsCollapsed] = React.useState(() => {
+    // Check localStorage for saved collapsed preference
+    const savedCollapsed = localStorage.getItem('sidebarCollapsed');
+    return savedCollapsed === 'true';
   });
 
   // Initialize data when warden data is available
@@ -96,11 +103,28 @@ export default function Sidebar({ open, onClose }) {
     // Save to localStorage
     localStorage.setItem('darkMode', newDarkMode.toString());
 
-    // Apply to document
+    // Apply theme change with smooth transition
     if (newDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+    }
+
+    // Add smooth transition to the entire document
+    document.documentElement.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+    
+    // Remove transition after animation completes
+    setTimeout(() => {
+      document.documentElement.style.transition = '';
+    }, 300);
+  };
+
+  const toggleSidebar = () => {
+    const newCollapsed = !isCollapsed;
+    setIsCollapsed(newCollapsed);
+    localStorage.setItem('sidebarCollapsed', newCollapsed.toString());
+    if (onCollapseChange) {
+      onCollapseChange(newCollapsed);
     }
   };
 
@@ -115,28 +139,34 @@ export default function Sidebar({ open, onClose }) {
 
   return (
     <div
-      className="fixed left-0 top-0 h-full w-60 flex flex-col z-10 transition-colors"
+      className={`fixed left-0 top-0 h-full flex flex-col z-10 transition-all duration-300 select-none ${isCollapsed ? 'w-16' : 'w-60'
+        }`}
       style={{
         backgroundColor: 'var(--color-background)',
-        borderRight: '1px solid var(--gray-6)'
+        borderRight: '1px solid var(--gray-6)',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none'
       }}
     >
-      {/* Instagram Logo */}
-      <div className="p-6 pb-4">
+      {/* HostelCare Logo */}
+      <div className={`${isCollapsed ? 'p-3 pb-4' : 'p-6 pb-4'} flex items-center ${isCollapsed ? 'justify-center' : 'gap-2'}`}>
         <img
-          src="https://logos-world.net/wp-content/uploads/2020/04/Instagram-Logo-2013-2015.png"
-          alt="Instagram"
-          className="w-32 object-contain"
+          src={isDarkMode ? "/images/lightlogo.svg" : "/images/darklogo.svg"}
+          alt="HostelCare"
+          className={`object-contain ${isCollapsed ? 'w-9 h-9 mt-2' : 'w-10 h-10'}`}
         />
+        {!isCollapsed && <h1 className='text-2xl font-bold'>HostelCare</h1>}
       </div>
 
       {/* Navigation Menu */}
-      <div className="flex-1 px-4 space-y-2">
+      <div className={`flex-1 space-y-2 ${isCollapsed ? 'px-2' : 'px-4'}`}>
         {menuItems.map((item) => (
           <button
             key={item.text}
             onClick={() => handleNavigation(item.path)}
-            className={`w-full flex items-center gap-4 py-3 px-3 text-left rounded-lg transition-colors group relative cursor-pointer ${isActive(item.path) ? 'font-medium' : 'font-normal'
+            className={`w-full flex items-center ${isCollapsed ? 'justify-center py-3 px-2' : 'gap-4 py-3 px-3'} text-left rounded-lg transition-colors group relative cursor-pointer ${isActive(item.path) ? 'font-medium' : 'font-normal'
               }`}
             style={{
               color: 'var(--gray-12)',
@@ -156,6 +186,7 @@ export default function Sidebar({ open, onClose }) {
                 e.target.style.backgroundColor = 'transparent';
               }
             }}
+            title={isCollapsed ? item.text : undefined}
           >
             <div
               className="w-6 h-6 flex items-center justify-center"
@@ -164,29 +195,40 @@ export default function Sidebar({ open, onClose }) {
               {item.text === 'Profile' && (user || wardenData) ? (
                 <Avatar
                   src={wardenData?.profile_pic}
-                  size="2" 
-                  color='gray' 
-                  radius="full" 
+                  size="2"
+                  color='gray'
+                  radius="full"
                   fallback={wardenData?.name ? wardenData.name.charAt(0).toUpperCase() : (user?.name ? user.name.charAt(0).toUpperCase() : 'W')} />
               ) : (
                 item.icon
               )}
             </div>
-            <span
-              className="text-base"
-              style={{ 
-                color: 'var(--gray-12)',
-                userSelect: 'none',
-                WebkitUserSelect: 'none',
-                MozUserSelect: 'none',
-                msUserSelect: 'none'
-              }}
-            >
-              {item.text === 'Profile' && (user || wardenData) ? (wardenData?.name || user?.name || 'Admin User') : item.text}
-            </span>
-            {item.hasBadge && (
-              <div className="ml-auto">
-                <Badge variant="solid" radius="full" color="red">
+            {!isCollapsed && (
+              <>
+                <span
+                  className="text-base"
+                  style={{
+                    color: 'var(--gray-12)',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    MozUserSelect: 'none',
+                    msUserSelect: 'none'
+                  }}
+                >
+                  {item.text === 'Profile' && (user || wardenData) ? (wardenData?.name || user?.name || 'Admin User') : item.text}
+                </span>
+                {item.hasBadge && (
+                  <div className="ml-auto">
+                    <Badge variant="solid" radius="full" color="red">
+                      {pendingCount}
+                    </Badge>
+                  </div>
+                )}
+              </>
+            )}
+            {isCollapsed && item.hasBadge && (
+              <div className="absolute -top-1 -right-1">
+                <Badge variant="solid" radius="full" color="red" size="1">
                   {pendingCount}
                 </Badge>
               </div>
@@ -196,11 +238,11 @@ export default function Sidebar({ open, onClose }) {
       </div>
 
       {/* Dark Mode Toggle */}
-      <div className="px-4 pb-4">
+      <div className={`${isCollapsed ? 'px-2' : 'px-4'} pb-2`}>
         <button
           onClick={toggleDarkMode}
-          className="w-full flex items-center gap-4 py-3 px-3 text-left rounded-lg transition-colors group cursor-pointer"
-          style={{ 
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center py-3 px-2' : 'gap-4 py-3 px-3'} text-left rounded-lg transition-colors group cursor-pointer`}
+          style={{
             color: 'var(--gray-12)',
             userSelect: 'none',
             WebkitUserSelect: 'none',
@@ -213,6 +255,7 @@ export default function Sidebar({ open, onClose }) {
           onMouseLeave={(e) => {
             e.target.style.backgroundColor = 'transparent';
           }}
+          title={isCollapsed ? (isDarkMode ? 'Light Mode' : 'Dark Mode') : undefined}
         >
           <div
             className="w-6 h-6 flex items-center justify-center"
@@ -220,30 +263,29 @@ export default function Sidebar({ open, onClose }) {
           >
             {isDarkMode ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
           </div>
-          <span
-            className="text-base"
-            style={{ 
-              color: 'var(--gray-12)',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              MozUserSelect: 'none',
-              msUserSelect: 'none'
-            }}
-          >
-            {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-          </span>
+          {!isCollapsed && (
+            <span
+              className="text-base"
+              style={{
+                color: 'var(--gray-12)',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                MozUserSelect: 'none',
+                msUserSelect: 'none'
+              }}
+            >
+              {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Logout Button */}
-      <div
-        className="p-4 border-t"
-        style={{ borderTopColor: 'var(--gray-6)' }}
-      >
+      {/* Sidebar Toggle */}
+      <div className={`${isCollapsed ? 'px-2' : 'px-4'} pb-2`}>
         <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-4 py-3 px-3 text-left rounded-lg transition-colors group cursor-pointer"
-          style={{ 
+          onClick={toggleSidebar}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center py-3 px-2' : 'gap-4 py-3 px-3'} text-left rounded-lg transition-colors group cursor-pointer`}
+          style={{
             color: 'var(--gray-12)',
             userSelect: 'none',
             WebkitUserSelect: 'none',
@@ -256,6 +298,53 @@ export default function Sidebar({ open, onClose }) {
           onMouseLeave={(e) => {
             e.target.style.backgroundColor = 'transparent';
           }}
+          title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+        >
+          <div
+            className="w-6 h-6 flex items-center justify-center"
+            style={{ color: 'var(--gray-12)' }}
+          >
+            {isCollapsed ? <ChevronRight className="w-6 h-6" /> : <ChevronLeft className="w-6 h-6" />}
+          </div>
+          {!isCollapsed && (
+            <span
+              className="text-base"
+              style={{
+                color: 'var(--gray-12)',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                MozUserSelect: 'none',
+                msUserSelect: 'none'
+              }}
+            >
+              Collapse
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Logout Button */}
+      <div
+        className={`${isCollapsed ? 'p-2' : 'p-4'} border-t`}
+        style={{ borderTopColor: 'var(--gray-6)' }}
+      >
+        <button
+          onClick={handleLogout}
+          className={`w-full flex items-center ${isCollapsed ? 'justify-center py-3 px-2' : 'gap-4 py-3 px-3'} text-left rounded-lg transition-colors group cursor-pointer`}
+          style={{
+            color: 'var(--gray-12)',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = 'var(--gray-4)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'transparent';
+          }}
+          title={isCollapsed ? 'Logout' : undefined}
         >
           <div
             className="w-6 h-6 flex items-center justify-center"
@@ -263,18 +352,20 @@ export default function Sidebar({ open, onClose }) {
           >
             <LogOut className="w-6 h-6" />
           </div>
-          <span
-            className="text-base"
-            style={{ 
-              color: 'var(--gray-12)',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              MozUserSelect: 'none',
-              msUserSelect: 'none'
-            }}
-          >
-            Logout
-          </span>
+          {!isCollapsed && (
+            <span
+              className="text-base"
+              style={{
+                color: 'var(--gray-12)',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                MozUserSelect: 'none',
+                msUserSelect: 'none'
+              }}
+            >
+              Logout
+            </span>
+          )}
         </button>
       </div>
     </div>

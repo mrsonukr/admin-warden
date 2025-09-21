@@ -166,7 +166,7 @@ export default function ForgotPassword() {
         alignItems: "center",
         justifyContent: "center",
         p: 2,
-        backgroundColor: "#F0F4F9",
+        backgroundColor: "var(--gray-2)",
       }}
     >
       <Box

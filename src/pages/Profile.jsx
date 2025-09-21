@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Sidebar from '../components/Sidebar';
-import { updateWardenProfile } from '../services/api';
+import { updateWardenProfile, changeWardenPassword } from '../services/api';
 import {
     Box,
     Text,
@@ -18,19 +18,30 @@ import {
     SegmentedControl,
     Spinner
 } from "@radix-ui/themes";
-import { User, Mail, Phone, MapPin, Calendar, Copy, Edit, Upload, X } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Calendar, Copy, Edit, Upload, X, Key } from 'lucide-react';
 
 const Profile = () => {
     const { user, wardenData, fetchWardenInfo } = useAuth();
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(() => {
+        const savedCollapsed = localStorage.getItem('sidebarCollapsed');
+        return savedCollapsed === 'true';
+    });
     const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+    const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = React.useState(false);
     const [editData, setEditData] = React.useState({
         email: '',
         phone: '',
         gender: 'male'
     });
+    const [passwordData, setPasswordData] = React.useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
     const [selectedGender, setSelectedGender] = React.useState('male');
     const [profileImage, setProfileImage] = React.useState(null);
     const [isSaving, setIsSaving] = React.useState(false);
+    const [isChangingPassword, setIsChangingPassword] = React.useState(false);
     const fileInputRef = React.useRef(null);
 
     const formatDate = (dateString) => {
@@ -57,8 +68,24 @@ const Profile = () => {
         setIsEditDialogOpen(true);
     };
 
+    const handleChangePasswordClick = () => {
+        setPasswordData({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+        });
+        setIsChangePasswordDialogOpen(true);
+    };
+
     const handleInputChange = (field, value) => {
         setEditData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handlePasswordInputChange = (field, value) => {
+        setPasswordData(prev => ({
             ...prev,
             [field]: value
         }));
@@ -124,6 +151,56 @@ const Profile = () => {
 
     const handleCancel = () => {
         setIsEditDialogOpen(false);
+    };
+
+    const handleChangePassword = async () => {
+        // Validate passwords
+        if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+            alert('Please fill in all password fields.');
+            return;
+        }
+
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            alert('New password and confirm password do not match.');
+            return;
+        }
+
+        if (passwordData.newPassword.length < 6) {
+            alert('New password must be at least 6 characters long.');
+            return;
+        }
+
+        setIsChangingPassword(true);
+        try {
+            const wardenId = wardenData?.id || wardenData?.warden_id;
+            const response = await changeWardenPassword(wardenId, {
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword
+            }, user?.token);
+            
+            console.log('Password changed successfully:', response);
+            alert('Password changed successfully!');
+            setIsChangePasswordDialogOpen(false);
+            setPasswordData({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: ''
+            });
+        } catch (error) {
+            console.error('Error changing password:', error);
+            alert(error.message || 'Failed to change password. Please try again.');
+        } finally {
+            setIsChangingPassword(false);
+        }
+    };
+
+    const handleCancelPasswordChange = () => {
+        setIsChangePasswordDialogOpen(false);
+        setPasswordData({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+        });
     };
 
     const compressImageToWebP = (file, maxSizeKB = 25) => {
@@ -232,16 +309,18 @@ const Profile = () => {
     if (!wardenData) {
         return (
             <Flex style={{ minHeight: '100vh' }}>
-                <Sidebar />
+                <Sidebar onCollapseChange={setIsSidebarCollapsed} />
                 <Box style={{
                     flex: 1,
                     padding: '24px',
-                    marginLeft: '240px',
+                    marginLeft: isSidebarCollapsed ? '64px' : '240px',
                     minHeight: '100vh',
                     backgroundColor: 'var(--color-background)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    transition: 'margin-left 0.3s ease',
+                    width: isSidebarCollapsed ? 'calc(100vw - 64px)' : 'calc(100vw - 240px)'
                 }}>
                     <Text size="4" color="gray">Loading profile...</Text>
                 </Box>
@@ -251,14 +330,16 @@ const Profile = () => {
 
     return (
         <Flex style={{ minHeight: '100vh' }}>
-            <Sidebar />
+            <Sidebar onCollapseChange={setIsSidebarCollapsed} />
 
             <Box style={{
                 flex: 1,
                 padding: '24px',
-                marginLeft: '240px',
+                marginLeft: isSidebarCollapsed ? '64px' : '240px',
                 minHeight: '100vh',
-                backgroundColor: 'var(--color-background)'
+                backgroundColor: 'var(--color-background)',
+                transition: 'margin-left 0.3s ease',
+                width: isSidebarCollapsed ? 'calc(100vw - 64px)' : 'calc(100vw - 240px)'
             }}>
                 {/* Header */}
                 <Flex align="center" justify="between" mb="6">
@@ -294,10 +375,16 @@ const Profile = () => {
                                                 </Flex>
                                             </Flex>
                                         </Flex>
-                                        <Button variant="soft" color="indigo" style={{ cursor: 'pointer' }} onClick={handleEditClick}>
-                                            <Edit size="16" />
-                                            Edit Profile
-                                        </Button>
+                                        <Flex gap="2">
+                                            <Button variant="soft" color="indigo" style={{ cursor: 'pointer' }} onClick={handleEditClick}>
+                                                <Edit size="16" />
+                                                Edit Profile
+                                            </Button>
+                                            <Button variant="soft" color="indigo" style={{ cursor: 'pointer' }} onClick={handleChangePasswordClick}>
+                                                <Key size="16" />
+                                                Change Password
+                                            </Button>
+                                        </Flex>
                                     </Flex>
 
                                     {/* Profile Details */}
@@ -467,6 +554,76 @@ const Profile = () => {
                                 'Save Changes'
                             )}
                         </Button>
+                    </Flex>
+                </Dialog.Content>
+            </Dialog.Root>
+
+            {/* Change Password Dialog */}
+            <Dialog.Root open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
+                <Dialog.Content style={{ maxWidth: 500 }}>
+                    <Dialog.Title>Change Password</Dialog.Title>
+
+                    <Flex direction="column" gap="4">
+                        {/* Current Password Field */}
+                        <Flex direction="column" gap="2">
+                            <Text size="2" weight="medium">Current Password</Text>
+                            <TextField.Root
+                                type="password"
+                                value={passwordData.currentPassword}
+                                onChange={(e) => handlePasswordInputChange('currentPassword', e.target.value)}
+                                placeholder="Enter current password"
+                            />
+                        </Flex>
+
+                        {/* New Password Field */}
+                        <Flex direction="column" gap="2">
+                            <Text size="2" weight="medium">New Password</Text>
+                            <TextField.Root
+                                type="password"
+                                value={passwordData.newPassword}
+                                onChange={(e) => handlePasswordInputChange('newPassword', e.target.value)}
+                                placeholder="Enter new password"
+                            />
+                        </Flex>
+
+                        {/* Confirm Password Field */}
+                        <Flex direction="column" gap="2">
+                            <Text size="2" weight="medium">Confirm New Password</Text>
+                            <TextField.Root
+                                type="password"
+                                value={passwordData.confirmPassword}
+                                onChange={(e) => handlePasswordInputChange('confirmPassword', e.target.value)}
+                                placeholder="Confirm new password"
+                            />
+                        </Flex>
+                    </Flex>
+
+                    <Flex gap="3" mt="4" justify="between" align="center">
+                        <Badge color="gray" variant="soft" size="2">
+                            Forgot password? Contact admin
+                        </Badge>
+                        <Flex gap="3">
+                            <Dialog.Close>
+                                <Button variant="soft" color="gray" style={{ cursor: 'pointer' }} onClick={handleCancelPasswordChange}>
+                                    Cancel
+                                </Button>
+                            </Dialog.Close>
+                            <Button 
+                                onClick={handleChangePassword} 
+                                style={{ cursor: 'pointer' }}
+                                disabled={isChangingPassword}
+                                color="indigo"
+                            >
+                                {isChangingPassword ? (
+                                    <Flex align="center" gap="2">
+                                        <Spinner size="1" />
+                                        Changing...
+                                    </Flex>
+                                ) : (
+                                    'Change Password'
+                                )}
+                            </Button>
+                        </Flex>
                     </Flex>
                 </Dialog.Content>
             </Dialog.Root>
