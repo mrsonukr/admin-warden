@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { Theme } from "@radix-ui/themes";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ComplaintsProvider } from "./contexts/ComplaintsContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -17,61 +18,63 @@ export default function App() {
     <Theme>
       <AuthProvider>
         <ComplaintsProvider>
-          <Router>
-            <Routes>
-              <Route 
-                path="/" 
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/complaints" 
-                element={
-                  <ProtectedRoute>
-                    <Complaints />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/complaints/:id" 
-                element={
-                  <ProtectedRoute>
-                    <ComplaintView />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/profile" 
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/create-complaint" 
-                element={
-                  <ProtectedRoute>
-                    <CreateComplaint />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/analytics" 
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route path="/login" element={<Login />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Router>
+          <NotificationProvider>
+            <Router>
+              <Routes>
+                <Route 
+                  path="/" 
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/complaints" 
+                  element={
+                    <ProtectedRoute>
+                      <Complaints />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/complaints/:id" 
+                  element={
+                    <ProtectedRoute>
+                      <ComplaintView />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/profile" 
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/create-complaint" 
+                  element={
+                    <ProtectedRoute>
+                      <CreateComplaint />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/analytics" 
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Router>
+          </NotificationProvider>
         </ComplaintsProvider>
       </AuthProvider>
     </Theme>

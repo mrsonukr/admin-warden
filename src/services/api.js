@@ -417,3 +417,41 @@ export const sendBothNotifications = async (rollNo, notificationData) => {
     throw error;
   }
 };
+
+export const addStudent = async (studentData, token) => {
+  console.log('🚀 API Call: addStudent', {
+    url: `${API_BASE_URL}/students`,
+    method: 'POST',
+    studentData,
+    timestamp: new Date().toISOString()
+  });
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/students`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(studentData),
+    });
+
+    console.log('📡 Response received for addStudent:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ addStudent success:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error adding student:', error);
+    throw error;
+  }
+};
